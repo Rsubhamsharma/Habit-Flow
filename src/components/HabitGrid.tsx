@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns';
 import { Check, Pencil, Trash2, Plus } from 'lucide-react';
 import { Habit, ViewMode } from '@/types/habit';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ interface HabitGridProps {
   onAddHabit: (name: string, color: string) => void;
   onUpdateHabit: (id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt'>>) => void;
   onDeleteHabit: (id: string) => void;
+  isLoading?: boolean;
 }
 
 const HABIT_COLORS = [
@@ -47,6 +48,7 @@ export function HabitGrid({
   onAddHabit,
   onUpdateHabit,
   onDeleteHabit,
+  isLoading = false,
 }: HabitGridProps) {
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitColor, setNewHabitColor] = useState(HABIT_COLORS[0]);
@@ -58,6 +60,9 @@ export function HabitGrid({
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  // Memoize habit IDs to avoid re-animations
+  const habitIds = useMemo(() => habits.map(h => h.id).join(','), [habits]);
 
   const handleAddHabit = () => {
     if (newHabitName.trim()) {
@@ -196,16 +201,19 @@ export function HabitGrid({
         </div>
 
         {/* Habit rows */}
-        {habits.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>Loading habits...</p>
+          </div>
+        ) : habits.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>No habits yet. Add your first habit to get started!</p>
           </div>
         ) : (
-          habits.map((habit, index) => (
+          habits.map((habit) => (
             <div
               key={habit.id}
-              className="grid grid-cols-[200px_repeat(31,1fr)] gap-1 mb-2 items-center animate-fade-in"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="grid grid-cols-[200px_repeat(31,1fr)] gap-1 mb-2 items-center"
             >
               <div className="flex items-center gap-2 pr-2">
                 <div
@@ -246,12 +254,12 @@ export function HabitGrid({
                     className={cn(
                       'habit-cell group',
                       isCompleted && 'habit-cell-completed',
-                      isToday(day) && !isCompleted && 'border-primary/50 animate-pulse-glow'
+                      isToday(day) && !isCompleted && 'border-primary/50'
                     )}
                     style={isCompleted ? { background: habit.color } : undefined}
                   >
                     {isCompleted && (
-                      <Check className="w-4 h-4 text-primary-foreground animate-check-bounce" />
+                      <Check className="w-4 h-4 text-primary-foreground" />
                     )}
                   </button>
                 );

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, RadialBarChart, RadialBar, Legend } from 'recharts';
-import { TrendingUp, Award, Calendar, Target, Flame, Moon } from 'lucide-react';
-import { useHabits } from '@/hooks/useHabits';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
+import { TrendingUp, Award, Target, Moon } from 'lucide-react';
+import { useHabitsDb } from '@/hooks/useHabitsDb';
 import { StatsCard } from '@/components/StatsCard';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +17,7 @@ const CHART_COLORS = [
 ];
 
 export default function Analytics() {
-  const { habits, sleepEntries } = useHabits();
+  const { habits, sleepEntries, loading } = useHabitsDb();
 
   // Calculate weekly completion data
   const weeklyData = useMemo(() => {
@@ -106,6 +106,14 @@ export default function Analytics() {
   const avgSleep = sleepEntries.length > 0
     ? (sleepEntries.reduce((sum, e) => sum + e.hours, 0) / sleepEntries.length).toFixed(1)
     : '—';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading analytics...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -247,7 +255,7 @@ export default function Analytics() {
               Habit Distribution
             </h3>
             <div className="h-[300px]">
-              {pieData.length > 0 ? (
+              {pieData.length > 0 && pieData.some(p => p.value > 0) ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -258,6 +266,7 @@ export default function Analytics() {
                       outerRadius={100}
                       paddingAngle={2}
                       dataKey="value"
+                      isAnimationActive={false}
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -294,7 +303,7 @@ export default function Analytics() {
           ) : (
             <div className="space-y-4">
               {habitStats.map((stat, index) => (
-                <div key={index} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
+                <div key={index}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <div
