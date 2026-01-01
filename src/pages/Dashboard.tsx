@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Target, CheckCircle2, TrendingUp, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useHabits } from '@/hooks/useHabits';
+import { Target, CheckCircle2, TrendingUp, Moon, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { useHabitsDb } from '@/hooks/useHabitsDb';
+import { useAuth } from '@/hooks/useAuth';
 import { HabitGrid } from '@/components/HabitGrid';
 import { SleepTracker } from '@/components/SleepTracker';
 import { CalendarView } from '@/components/CalendarView';
@@ -9,16 +10,19 @@ import { NotesSection } from '@/components/NotesSection';
 import { StatsCard } from '@/components/StatsCard';
 import { Button } from '@/components/ui/button';
 import { ViewMode } from '@/types/habit';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
+  const { signOut } = useAuth();
 
   const {
     habits,
     sleepEntries,
     tasks,
     notes,
+    loading,
     addHabit,
     updateHabit,
     deleteHabit,
@@ -30,7 +34,7 @@ export default function Dashboard() {
     addNote,
     updateNote,
     deleteNote,
-  } = useHabits();
+  } = useHabitsDb();
 
   // Calculate stats
   const totalHabits = habits.length;
@@ -72,6 +76,11 @@ export default function Dashboard() {
     setCurrentMonth(newDate);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -81,15 +90,20 @@ export default function Dashboard() {
             <h1 className="text-3xl font-display font-bold text-foreground">
               Your Habits
             </h1>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <span className="text-lg font-medium min-w-[150px] text-center">
-                {format(currentMonth, 'MMMM yyyy')}
-              </span>
-              <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-                <ChevronRight className="w-5 h-5" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <span className="text-lg font-medium min-w-[150px] text-center">
+                  {format(currentMonth, 'MMMM yyyy')}
+                </span>
+                <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+              <Button variant="ghost" size="icon" onClick={handleSignOut} title="Sign out">
+                <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -139,6 +153,7 @@ export default function Dashboard() {
             onAddHabit={addHabit}
             onUpdateHabit={updateHabit}
             onDeleteHabit={deleteHabit}
+            isLoading={loading}
           />
 
           <SleepTracker
